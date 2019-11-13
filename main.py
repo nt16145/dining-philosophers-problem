@@ -51,7 +51,7 @@ class Philosopher:
         if not eating_time:
             sleep(uniform(0.75, 1.25))
         else:
-            sleep(chewing_time)
+            sleep(eating_time)
 
 
 if __name__ == "__main__":
