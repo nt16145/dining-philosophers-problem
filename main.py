@@ -9,9 +9,19 @@ CLEAN = 1
 
 class ChandyMisraSolver(Thread):
 
-    def __init__(self, philosophers, forks):
-        self.philosophers = philosophers
-        self.forks = forks
+    def __init__(self):
+        self.forks = [Fork() for i in range(5)]
+        self.philosophers = [Philosopher("P%d"%(i+1), forks[i], forks[(i+1)%5]) for i in range(5)]
+
+    def sendMessageFrom(self, philosopher):
+        i = self.philosophers.index(philosopher)
+        self.philosophers[(i-1)%5].receiveMessage()
+        self.philosophers[(i+1)%5].receiveMessage()
+
+    def execute(self):
+        threads = [Thread(target=philosophers[i].dine) for i in range(5)]
+        for t in threads:
+            t.start()
 
 
 # mutex resource
@@ -27,32 +37,34 @@ class Fork:
 
 class Philosopher:
 
-    def __init__(self, name, left, right, num=100):
-        self.name = name
+    def __init__(self, ID, left, right, num=100):
+        self.ID = ID
         self.left = left
         self.right = right
         self.num = num
 
     def dine(self):
-        print("%sが食事開始" % self.name)
+        print("%dが食事開始" % self.ID)
         for i in range(self.num):
-            print("%s %2d回目の食事" % (self.name, i+1))
+            print("%d %2d回目の食事" % (self.ID, i+1))
             self.useLeftFork()
             self.useRightFork()
             self.eat()
             self.putLeftFork()
             self.putRightFork()
-        print("%sが食事終了" % self.name)
+        self.left.state = DIRTY
+        self.right.state = DIRTY
+        print("%dが食事終了" % self.ID)
 
     def useLeftFork(self):
         start = time()
         self.left.use()
-        print("%s 思索時間: %f [sec]" % (self.name, (time() - start)))
+        print("%d 思索時間: %f [sec]" % (self.ID, (time() - start)))
 
     def useRightFork(self):
         start = time()
         self.right.use()
-        print("%s 思索時間: %f [sec]" % (self.name, (time() - start)))
+        print("%d 思索時間: %f [sec]" % (self.ID, (time() - start)))
 
     def putLeftFork(self):
         self.left.put()
@@ -64,13 +76,17 @@ class Philosopher:
         if eating_time:
             sleep(eating_time)
         else:
-            sleep(uniform(0.75, 1.25))
+            sleep(uniform(0.1, 0.2))
 
+    def receiveMessage(self):
+        if self.left.state == DIRTY:
+            self.left.state = CLEAN
+            self.putLeftFork()
+        if self.right.state == DIRTY:
+            self.right.state = CLEAN
+            self.putRightFork()
 
 if __name__ == "__main__":
 
-    forks = [Fork() for i in range(5)]
-    philosophers = [Philosopher("P%d"%(i+1), forks[i], forks[(i+1)%5]) for i in range(5)]
-    threads = [Thread(target=philosophers[i].dine) for i in range(5)]
-    for t in threads:
-        t.start()
+    solver = ChandyMisraSolver()
+    solver.execute()
