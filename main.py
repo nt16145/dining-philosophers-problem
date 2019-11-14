@@ -4,9 +4,20 @@ from threading import Thread, Lock
 from time import time, sleep
 from random import uniform
 
+DIRTY = 0
+CLEAN = 1
+
+class ChandyMisraSolver(Thread):
+
+    def __init__(self, philosophers, forks):
+        self.philosophers = philosophers
+        self.forks = forks
+
+
 # mutex resource
 class Fork:
-    def __init__(self):
+    def __init__(self, state=DIRTY):
+        self.state = state
         self.lock = Lock()
     def use(self):
         self.lock.acquire() # lock
@@ -26,32 +37,34 @@ class Philosopher:
         print("%sが食事開始" % self.name)
         for i in range(self.num):
             print("%s %2d回目の食事" % (self.name, i+1))
-            self.useFork("left")
-            self.useFork("right")
+            self.useLeftFork()
+            self.useRightFork()
             self.eat()
-            self.putFork("left")
-            self.putFork("right")
+            self.putLeftFork()
+            self.putRightFork()
         print("%sが食事終了" % self.name)
 
-    def useFork(self, hand):
+    def useLeftFork(self):
         start = time()
-        if hand == "left":
-            self.left.use()
-        elif hand == "right":
-            self.right.use()
+        self.left.use()
         print("%s 思索時間: %f [sec]" % (self.name, (time() - start)))
 
-    def putFork(self, hand):
-        if hand == "left":
-            self.left.put()
-        elif hand == "right":
-            self.right.put()
+    def useRightFork(self):
+        start = time()
+        self.right.use()
+        print("%s 思索時間: %f [sec]" % (self.name, (time() - start)))
+
+    def putLeftFork(self):
+        self.left.put()
+
+    def putRightFork(self):
+        self.right.put()
 
     def eat(self, eating_time=None):
-        if not eating_time:
-            sleep(uniform(0.75, 1.25))
-        else:
+        if eating_time:
             sleep(eating_time)
+        else:
+            sleep(uniform(0.75, 1.25))
 
 
 if __name__ == "__main__":
