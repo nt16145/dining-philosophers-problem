@@ -4,30 +4,9 @@ from threading import Thread, Lock
 from time import time, sleep
 from random import uniform
 
-DIRTY = 0
-CLEAN = 1
-
-class ChandyMisraSolver(Thread):
-
-    def __init__(self):
-        self.forks = [Fork() for i in range(5)]
-        self.philosophers = [Philosopher("P%d"%(i+1), forks[i], forks[(i+1)%5]) for i in range(5)]
-
-    def sendMessageFrom(self, philosopher):
-        i = self.philosophers.index(philosopher)
-        self.philosophers[(i-1)%5].receiveMessage()
-        self.philosophers[(i+1)%5].receiveMessage()
-
-    def execute(self):
-        threads = [Thread(target=philosophers[i].dine) for i in range(5)]
-        for t in threads:
-            t.start()
-
-
 # mutex resource
 class Fork:
-    def __init__(self, state=DIRTY):
-        self.state = state
+    def __init__(self):
         self.lock = Lock()
     def use(self):
         self.lock.acquire() # lock
@@ -52,8 +31,6 @@ class Philosopher:
             self.eat()
             self.putLeftFork()
             self.putRightFork()
-        self.left.state = DIRTY
-        self.right.state = DIRTY
         print("%dが食事終了" % self.ID)
 
     def useLeftFork(self):
@@ -78,15 +55,19 @@ class Philosopher:
         else:
             sleep(uniform(0.1, 0.2))
 
-    def receiveMessage(self):
-        if self.left.state == DIRTY:
-            self.left.state = CLEAN
-            self.putLeftFork()
-        if self.right.state == DIRTY:
-            self.right.state = CLEAN
-            self.putRightFork()
+class Table:
+
+    def __init__(self):
+        self.forks = [Fork() for i in range(5)]
+        self.philosophers = [Philosopher(i, self.forks[i], self.forks[(i+1)%5]) for i in range(5)]
+        self.threads = [Thread(target=self.philosophers[i].dine) for i in range(5)]
+
+    def start(self):
+        for t in self.threads:
+            t.start()
 
 if __name__ == "__main__":
 
-    solver = ChandyMisraSolver()
-    solver.execute()
+    table = Table()
+    table.start()
+
