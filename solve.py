@@ -7,41 +7,39 @@ from threading import Thread, Lock, Condition
 DIRTY = 0
 CLEAN = 1
 
-class SyncChannel:
+class ForkSyncManager:
 
     def __init__(self):
-        self.lock = Lock()
-        self.condition = Condition(self.lock)
+        self.condition = Condition()
+
 
     def wait(self):
-        # This "with" statement do "acquire(lock)" and "release(unlock)".
+        """
+        All of the objects provided by this module
+        that have acquire() and release() methods can be used as context managers for a with statement.
+        """
         with self.condition:
             self.condition.wait()
 
+
     def notifyAll(self):
         with self.condition:
-            self.condition.notifyAll()
-
-
-class TableSetup:
-
-    def __init__(self):
-        self.done = False
-        self.channel = SyncChannel()
+            self.condition.notify_all()
 
 
 
 class Fork:
 
-    def __init__(self, fid, pid):
-        self.fid = fid # forks's ID
+    def __init__(self, pid):
+
         self.pid = pid # philosopher's ID
         self.state = DIRTY
         self.lock = Lock()
-        self.channel = SyncChannel()
+        self.manager = ForkSyncManager()
 
 
     def request(self, pid):
+
         while self.pid != pid:
             if self.state == DIRTY:
                 self.lock.acquire()
@@ -49,21 +47,22 @@ class Fork:
                 self.pid = pid
                 self.lock.release()
             else:
-                self.channel.wait()
+                self.manager.wait()
+
 
     def done(self):
-        print("%d: done!" % self.pid)
+
         self.state = DIRTY
-        self.channel.notifyAll()
+        self.manager.notifyAll()
 
 
 
 class Philosopher:
 
-    def __init__(self, pid, name, table_setup, left, right):
+    def __init__(self, pid, name, left, right):
+
         self.pid = pid
         self.name = name
-        self.setup = table_setup
         self.left = left
         self.right = right
 
@@ -72,67 +71,47 @@ class Philosopher:
 
 
     def dine(self):
-        self.setup.channel.wait()
 
-        self.think()
-        self.eat()
-        while not self.setup.done:
-            self.think()
+        while True:
             self.eat()
+            self.think()
 
 
     def eat(self):
 
+        print("%sが左右のフォークを拾う．" % self.name)
         self.left.request(self.pid)
         self.right.request(self.pid)
 
-        print("%sが左右のフォークを拾う．" % self.name)
-        #self.left.lock.acquire()
-        #self.right.lock.acquire()
-
         print("%sが食事中..." % self.name)
+        sleep(uniform(0.02, 0.05))
 
         print("%sがフォークを左右に戻す．" % self.name)
-
         self.left.done()
         self.right.done()
-        #self.left.lock.release()
-        #self.right.lock.release()
 
 
     def think(self):
+
         print("%sが思索中..." % self.name)
+        sleep(uniform(0.02, 0.05))
+
 
 
 class Table:
 
-    """
-             F5
-          P1    P5
-       F1          F4
-    P2                P4
-        F2       F3
-             P3
-    """
-
     def __init__(self):
-        self.setup = TableSetup()
-        self.forks = [Fork(1, 1), Fork(2, 2), Fork(3, 3), Fork(4, 4), Fork(5, 1)]
-        self.philosophers = [Philosopher(1, "P1", self.setup, self.forks[0], self.forks[1]),
-                             Philosopher(2, "P2", self.setup, self.forks[1], self.forks[2]),
-                             Philosopher(3, "P3", self.setup, self.forks[2], self.forks[3]),
-                             Philosopher(4, "P4", self.setup, self.forks[3], self.forks[4]),
-                             Philosopher(5, "P5", self.setup, self.forks[4], self.forks[0])]
+        pass
 
 
     def start(self):
         print("--- 食事開始 ---")
-        self.setup.channel.notifyAll()
-
-
-    def stop(self):
-        print("--- 食事終了 ---")
-        self.setup.done = False
+        self.forks = [Fork(1), Fork(2), Fork(3), Fork(4), Fork(5)]
+        self.philosophers = [Philosopher(1, "哲学者1", self.forks[0], self.forks[1]),
+                             Philosopher(2, "哲学者2", self.forks[1], self.forks[2]),
+                             Philosopher(3, "哲学者3", self.forks[2], self.forks[3]),
+                             Philosopher(4, "哲学者4", self.forks[3], self.forks[4]),
+                             Philosopher(5, "哲学者5", self.forks[4], self.forks[0])]
 
 
 
@@ -140,3 +119,4 @@ if __name__ == "__main__":
 
     table = Table()
     table.start()
+

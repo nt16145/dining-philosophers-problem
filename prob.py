@@ -53,7 +53,7 @@ class Philosopher:
         if eating_time:
             sleep(eating_time)
         else:
-            sleep(uniform(0.1, 0.2))
+            sleep(uniform(0.02, 0.05))
 
 class Table:
 
