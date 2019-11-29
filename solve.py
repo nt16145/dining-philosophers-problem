@@ -3,6 +3,7 @@
 from time import time, sleep
 from random import uniform
 from threading import Thread, Lock, Condition
+import os
 
 DIRTY = 0
 CLEAN = 1
@@ -84,7 +85,7 @@ class Philosopher:
         self.right.request(self.pid)
 
         print("%sが食事中..." % self.name)
-        sleep(uniform(0.02, 0.05))
+        sleep(uniform(0.2, 0.5))
 
         print("%sがフォークを左右に戻す．" % self.name)
         self.left.done()
@@ -92,10 +93,8 @@ class Philosopher:
 
 
     def think(self):
-
         print("%sが思索中..." % self.name)
-        sleep(uniform(0.02, 0.05))
-
+        sleep(uniform(0.2, 0.5))
 
 
 class Table:
@@ -106,17 +105,13 @@ class Table:
 
     def start(self):
         print("--- 食事開始 ---")
-        self.forks = [Fork(1), Fork(2), Fork(3), Fork(4), Fork(5)]
-        self.philosophers = [Philosopher(1, "哲学者1", self.forks[0], self.forks[1]),
-                             Philosopher(2, "哲学者2", self.forks[1], self.forks[2]),
-                             Philosopher(3, "哲学者3", self.forks[2], self.forks[3]),
-                             Philosopher(4, "哲学者4", self.forks[3], self.forks[4]),
-                             Philosopher(5, "哲学者5", self.forks[4], self.forks[0])]
+        PhilosopherNames = ('Aristotle','Kant','Buddha','Marx', 'Russel')
+        self.forks = [Fork(p+1) for p in range(5)]
+        self.philosophers = [Philosopher(i, PhilosopherNames[i], self.forks[(i%5)],self.forks[(i+1)%5]) for i in range(5)]
 
 
 
 if __name__ == "__main__":
-
-    table = Table()
-    table.start()
+        table = Table()
+        table.start()
 
