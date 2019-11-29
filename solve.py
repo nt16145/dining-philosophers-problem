@@ -3,7 +3,6 @@
 from time import time, sleep
 from random import uniform
 from threading import Thread, Lock, Condition
-import os
 
 DIRTY = 0
 CLEAN = 1
